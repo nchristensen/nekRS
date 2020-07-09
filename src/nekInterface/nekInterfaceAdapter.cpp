@@ -482,6 +482,34 @@ void nek_gen_bcmap() {
 int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   options = &options_in;
   ins = ins_in;
+
+  // Save global communicator
+  MPI_Comm_dup(c, &(*ins)->globalComm);
+
+  //Get appnum and maximum appnum
+  void *v; 
+  int max_appnum, flag;
+  MPI_Comm_get_attr(c, MPI_APPNUM, &v, &flag);
+  int appnum = *(int*)v;
+  MPI_Allreduce(&appnum, &max_appnum, 1, MPI_INT, MPI_MAX, c);
+
+  // Split the global communicator based on app number.
+  // This should make the localComm identical to globalComm
+  // if there is no MPMD
+  MPI_Comm_split(c, appnum, 0, &(*ins)->localComm);
+
+  //Seems like setupcomm should be able to find the local
+  //comm from the global so passing in local comm is not 
+  //necessary?
+  
+  /*  
+  if(max_appnum > 0 ) {
+         
+    //local_comm = 
+   // Create local comm and assign c to it 
+  }
+  */
+
   MPI_Comm_rank(c,&rank);
   MPI_Fint nek_comm = MPI_Comm_c2f(c);
 

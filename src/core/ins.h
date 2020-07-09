@@ -5,6 +5,7 @@
 #include "mesh3D.h"
 #include "elliptic.h"
 #include "cds.h"
+#include <mpi.h>
 
 extern "C" { // Begin C Linkage
 typedef struct {
@@ -28,6 +29,10 @@ typedef struct {
   int Nscalar; 
   setupAide options;
   setupAide vOptions, pOptions; 	
+
+  // MPI Communicators
+  MPI_Comm globalComm;
+  MPI_Comm localComm;
 
   // INS SOLVER OCCA VARIABLES
   int NVfields, NTfields;
