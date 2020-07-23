@@ -35,7 +35,7 @@ static void (*nek_outpost_ptr)(double *v1, double *v2, double *v3, double *vp,
                                   double *vt, char *name, int);
 static void (*nek_uf_ptr)(double *, double *, double *);
 static int  (*nek_lglel_ptr)(int *);
-static void (*nek_setup_ptr)(int *, char *, char *, int*, int*, int*, int, int);
+static void (*nek_setup_ptr)(int *, char *, char *, int*, int*, int*, int*, int, int);
 static void (*nek_ifoutfld_ptr)(int *);
 static void (*nek_setics_ptr)(void);
 static int  (*nek_bcmap_ptr)(int *, int*);
@@ -231,7 +231,7 @@ void set_function_handles(const char *session_in,int verbose) {
 
   nek_ptr_ptr = (void (*)(void **, char *, int *)) dlsym(handle, fname("nekf_ptr"));
   check_error(dlerror());
-  nek_setup_ptr = (void (*)(int *, char *, char *, int *, int *, int *, int, int)) dlsym(handle, fname("nekf_setup"));
+  nek_setup_ptr = (void (*)(int *, char *, char *, int *, int *, int *, int *, int, int)) dlsym(handle, fname("nekf_setup"));
   check_error(dlerror());
   nek_uic_ptr = (void (*)(int *)) dlsym(handle, fname("nekf_uic"));
   check_error(dlerror());
@@ -294,7 +294,7 @@ void set_function_handles(const char *session_in,int verbose) {
 #undef load_or_noop
 }
 
-void mkSIZE(int lx1, int lxd, int lelt, int lelg, int ldim, int lpmin, int ldimt) {
+void mkSIZE(int lx1, int lxd, int lelt, int lelg, int ldim, int lpmin, int ldimt, int nsessmax) {
   //printf("generating SIZE file ... "); fflush(stdout);
 
   char line[BUFSIZ];
@@ -349,7 +349,11 @@ void mkSIZE(int lx1, int lxd, int lelt, int lelg, int ldim, int lpmin, int ldimt
       sprintf(line, "      parameter (lorder=%d)\n", 1);
     } else if(strstr(line, "parameter (lelr=") != NULL) {
       sprintf(line, "      parameter (lelr=%d)\n", 128*lelt);
+    } else if(strstr(line, "parameter (nsessmax=") != NULL) {
+      std::cout<<"EXPORTING " <<nsessmax<< " TO SIZE"<<std::endl;
+      sprintf(line, "      parameter (nsessmax=%d)\n", nsessmax);
     }
+
 
     strcpy(sizeFile + count, line);
     count += strlen(line);
@@ -401,7 +405,7 @@ void mkSIZE(int lx1, int lxd, int lelt, int lelg, int ldim, int lpmin, int ldimt
   fflush(stdout);
 }
 
-int buildNekInterface(const char *casename, int ldimt, int N, int np) {
+int buildNekInterface(const char *casename, int ldimt, int N, int np, int nsessmax) {
   printf("building nek ... "); fflush(stdout);
 
   char buf[BUFSIZ];
@@ -429,7 +433,7 @@ int buildNekInterface(const char *casename, int ldimt, int N, int np) {
   sscanf(buf, "%5s %9d %1d %9d", ver, &nelgt, &ndim, &nelgv);
   int lelt = nelgt/np + 3;
   if(lelt > nelgt) lelt = nelgt;
-  mkSIZE(N+1, 1, lelt, nelgt, ndim, np, ldimt);
+  mkSIZE(N+1, 1, lelt, nelgt, ndim, np, ldimt, nsessmax);
 
   // Copy case.usr file to cache_dir
   sprintf(buf,"%s.usr",casename);
@@ -483,9 +487,10 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   options = &options_in;
   ins = ins_in;
 
-  // Save global communicator
-  MPI_Comm_dup(c, &(*ins)->globalComm);
-
+  // Save global communicator, for some reason this seg faults
+  //MPI_Comm globalComm;
+  //MPI_Comm_dup(c, &globalComm);//(*ins)->globalComm);
+  //(*ins)->globalComm = &globalComm;
   //Get appnum and maximum appnum
   void *v; 
   int max_appnum, flag;
@@ -496,12 +501,13 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   // Split the global communicator based on app number.
   // This should make the localComm identical to globalComm
   // if there is no MPMD
-  MPI_Comm_split(c, appnum, 0, &(*ins)->localComm);
-
+  //MPI_Comm_split(c, appnum, 0, &(*ins)->localComm);
   //Seems like setupcomm should be able to find the local
   //comm from the global so passing in local comm is not 
   //necessary?
   
+  int ifneknekc = (int) max_appnum > 0;
+
   /*  
   if(max_appnum > 0 ) {
          
@@ -538,7 +544,7 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   } 
 
   (*nek_setup_ptr)(&nek_comm, (char *)cwd.c_str(), (char *)casename.c_str(),
-                   &flow, &nscal, &nBcRead, cwd.length(), casename.length());
+                   &flow, &nscal, &nBcRead, &ifneknekc, cwd.length(), casename.length());
 
   nekData.param = (double *) nek_ptr("param");
   nekData.ifield = (int *) nek_ptr("ifield");

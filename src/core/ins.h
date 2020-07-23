@@ -31,8 +31,8 @@ typedef struct {
   setupAide vOptions, pOptions; 	
 
   // MPI Communicators
-  MPI_Comm globalComm;
-  MPI_Comm localComm;
+  //MPI_Comm *globalComm;
+  //MPI_Comm *localComm;
 
   // INS SOLVER OCCA VARIABLES
   int NVfields, NTfields;

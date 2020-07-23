@@ -112,14 +112,14 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine nekf_setup(comm_in,path_in, session_in, ifflow_in,
-     $                      npscal_in, p32) 
+     $                      npscal_in, p32, ifneknekc_in) 
 
       include 'SIZE'
       include 'TOTAL'
       include 'DOMAIN'
       include 'NEKINTF'
 
-      integer comm_in, iftmsh_in, ifflow_in, p32
+      integer comm_in, iftmsh_in, ifflow_in, p32, ifneknekc_in
       character session_in*(*),path_in*(*)
 
       common /rdump/ ntdump
@@ -234,6 +234,12 @@ c-----------------------------------------------------------------------
       call mesh_metrics     ! print some metrics
 
       call setlog(.false.)  ! Initalize logical flags
+
+      ifneknekc = ifneknekc_in
+      write(*,*) 'CHECKING NEKNEK'
+      write(*,*) ifneknekc_in
+      write(*,*) ifneknekc
+      if (ifneknekc) call neknek_setup
 
       call bcmask  ! Set BC masks for Dirichlet boundaries.
 

@@ -20,7 +20,7 @@ int nrsBuildOnly = 0;  // hack for meshPhysicalNodes()
 
 static void setCache(string dir);
 static void setOUDF(libParanumal::setupAide &options);
-static void dryRun(libParanumal::setupAide &options, int npTarget); 
+static void dryRun(libParanumal::setupAide &options, int npTarget, int nsessmax); 
 
 namespace nekrs {
 
@@ -31,6 +31,17 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
   MPI_Comm_dup(comm_in, &comm);
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
+
+  // Neknek
+  void *v; 
+  int max_appnum, flag;
+  MPI_Comm_get_attr(comm, MPI_APPNUM, &v, &flag);
+  int appnum = *(int*)v;
+  MPI_Allreduce(&appnum, &max_appnum, 1, MPI_INT, MPI_MAX, comm);
+  // Should this be shoved into 'options'? Probably. Also avoids duplicating logic
+  // inside neknek_setup
+  int nsessmax = max_appnum + 1;
+
 
   configRead(comm);
  
@@ -48,14 +59,15 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
 
   if(!_backend.empty()) options.setArgs("THREAD MODEL", _backend); 
   if(!_deviceID.empty()) options.setArgs("DEVICE NUMBER", _deviceID); 
+  // Add nsessmax to options here
 
   setOUDF(options);
 
   if (nrsBuildOnly){
-  int rank, size;
-  MPI_Comm_rank(comm, &rank);
-  MPI_Comm_size(comm, &size);
-    dryRun(options, sizeTarget);
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    dryRun(options, sizeTarget, nsessmax);
     return;
   }
 
@@ -84,7 +96,7 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
   string casename;
   options.getArgs("CASENAME", casename);
   options.getArgs("POLYNOMIAL DEGREE", N);
-  if(rank == 0) buildNekInterface(casename.c_str(), mymax(1,nscal), N, size);
+  if(rank == 0) buildNekInterface(casename.c_str(), mymax(1,nscal), N, size, nsessmax);
   MPI_Barrier(comm);
 
   // init nek
@@ -205,7 +217,7 @@ void printRuntimeStatistics()
 
 } // namespace
 
-static void dryRun(libParanumal::setupAide &options, int npTarget) 
+static void dryRun(libParanumal::setupAide &options, int npTarget, int nsessmax) 
 {
   if (rank == 0) 
     cout << "performing dry-run for "
@@ -233,7 +245,7 @@ static void dryRun(libParanumal::setupAide &options, int npTarget)
   // jit compile nek
   int nscal;
   options.getArgs("NUMBER OF SCALARS", nscal);
-  if (rank == 0) buildNekInterface(casename.c_str(), nscal, N, npTarget);
+  if (rank == 0) buildNekInterface(casename.c_str(), nscal, N, npTarget, nsessmax);
   MPI_Barrier(comm);
 
   // init solver
