@@ -5,6 +5,7 @@
 #include "mesh3D.h"
 #include "elliptic.h"
 #include "cds.h"
+#include "mpi.h"
 
 extern "C" { // Begin C Linkage
 typedef struct
@@ -89,6 +90,19 @@ typedef struct
   dfloat* pSendBuffer;
   dfloat* pRecvBuffer;
   dfloat* velocityHaloGatherTmp;
+
+  //MPI variables
+  bool ifneknek;
+  bool ifneknekc;
+  int nsessmax;
+  int nsessions;
+  int* npsess;
+  int np_local;
+  int np_global;
+  int nid_local;
+  int nid_global;
+  MPI_Comm global_comm;
+  MPI_Comm local_comm;  
 
   occa::memory o_vSendBuffer,h_vSendBuffer;
   occa::memory o_vRecvBuffer,h_vRecvBuffer;
