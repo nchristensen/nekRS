@@ -506,7 +506,7 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   //comm from the global so passing in local comm is not 
   //necessary?
   
-  int ifneknekc = (int) max_appnum > 0;
+  int nsessions = max_appnum + 1;
 
   /*  
   if(max_appnum > 0 ) {
@@ -544,7 +544,7 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t **ins_in) {
   } 
 
   (*nek_setup_ptr)(&nek_comm, (char *)cwd.c_str(), (char *)casename.c_str(),
-                   &flow, &nscal, &nBcRead, &ifneknekc, cwd.length(), casename.length());
+                   &flow, &nscal, &nBcRead, &nsessions, cwd.length(), casename.length());
 
   nekData.param = (double *) nek_ptr("param");
   nekData.ifield = (int *) nek_ptr("ifield");

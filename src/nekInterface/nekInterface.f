@@ -112,16 +112,17 @@ c-----------------------------------------------------------------------
       end
 c-----------------------------------------------------------------------
       subroutine nekf_setup(comm_in,path_in, session_in, ifflow_in,
-     $                      npscal_in, p32, ifneknekc_in) 
+     $                      npscal_in, p32, nsessions_in) 
 
       include 'SIZE'
       include 'TOTAL'
       include 'DOMAIN'
       include 'NEKINTF'
 
-      integer comm_in, iftmsh_in, ifflow_in, p32, ifneknekc_in
+      integer comm_in, iftmsh_in, ifflow_in, p32, nsessions_in
       character session_in*(*),path_in*(*)
 
+c      common /nekmpi/ mp,nekcomm,nekgroup,nekreal
       common /rdump/ ntdump
 
       real rtest
@@ -145,6 +146,10 @@ c-----------------------------------------------------------------------
       llelt = lelt
 
       call setupcomm(comm_in,newcomm,newcommg,path_in,session_in)
+      intracomm = newcomm
+      nekcomm = newcomm  
+      iglobalcomm = newcommg   
+ 
       call iniproc()
 
       etimes = dnekclock()
@@ -235,11 +240,8 @@ c-----------------------------------------------------------------------
 
       call setlog(.false.)  ! Initalize logical flags
 
-      ifneknekc = ifneknekc_in
-      write(*,*) 'CHECKING NEKNEK'
-      write(*,*) ifneknekc_in
-      write(*,*) ifneknekc
-      if (ifneknekc) call neknek_setup
+      nsessions = nsessions_in
+      if (nsessions_in.gt.1) call neknek_setup
 
       call bcmask  ! Set BC masks for Dirichlet boundaries.
 

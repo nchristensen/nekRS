@@ -32,15 +32,6 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
 
-  // Neknek
-  void *v; 
-  int max_appnum, flag;
-  MPI_Comm_get_attr(comm, MPI_APPNUM, &v, &flag);
-  int appnum = *(int*)v;
-  MPI_Allreduce(&appnum, &max_appnum, 1, MPI_INT, MPI_MAX, comm);
-  // Should this be shoved into 'options'? Probably. Also avoids duplicating logic
-  // inside neknek_setup
-  int nsessmax = max_appnum + 1;
 
 
   configRead(comm);
@@ -145,6 +136,46 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
     cout << "initialization took " << MPI_Wtime() - t0 << " seconds" << endl; 
   }
   fflush(stdout);
+}
+
+void setupComm(MPI_Comm comm){
+  // Neknek
+  void *v; 
+  int max_appnum, flag;
+  MPI_Comm_get_attr(comm, MPI_APPNUM, &v, &flag);
+  int appnum = *(int*)v;
+  MPI_Allreduce(&appnum, &max_appnum, 1, MPI_INT, MPI_MAX, comm);
+  // Should this be shoved into 'options'? Probably. Also avoids duplicating logic
+  // inside neknek_setup
+  MPI_Comm global_comm, local_comm; // There will probably be problems with this
+  MPI_Comm_split(comm, appnum, 0, &local_comm);
+  MPI_Comm_dup(comm, &global_comm);
+ 
+  int nsessmax = max_appnum + 1;
+  bool ifneknek = nsessmax > 1;
+  int idsess = appnum;
+  int npsess[2] = {0,0}; //Expand this if more sessions are supported. Could be arbitrarily large
+  
+  if(nsessmax > 2){
+    std::cout<<"ERROR: More than two sessions are not currently supported
+  }
+  else{
+
+    npsess[idsess] = //Value from MPI Comm Size
+    Call MPI_AllReduce and maximize values in list.
+    /*
+    for(int i = 0; i < nsessmax; i++){
+      //Maybe use some allreduce maximum
+      if(i == idsess){
+        //Fill npsess[i] 
+      }
+      else{
+
+      }
+    }
+    */
+  }
+
 }
 
 void runStep(double time, double dt, int tstep)
