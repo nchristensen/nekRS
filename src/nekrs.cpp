@@ -140,6 +140,42 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
   timer::reset();
 }
 
+void setupComm(MPI_Comm comm, libParanumal::setupAide &options){
+  void *v; 
+  int max_appnum, flag;
+  MPI_Comm_get_attr(comm, MPI_APPNUM, &v, &flag);
+  int appnum = *(int*)v;
+  // Should this be shoved into 'options'? Probably. Also avoids duplicating logic
+  // inside neknek_setup
+  MPI_Comm global_comm, local_comm; // There will probably be problems with this
+  MPI_Comm_split(comm, appnum, 0, &local_comm);
+  MPI_Comm_dup(comm, &global_comm);
+ 
+  MPI_Allreduce(&appnum, &max_appnum, 1, MPI_INT, MPI_MAX, global_comm);
+  int nsessmax = 2;
+  int nsessions = max_appnum + 1;
+  bool ifneknek = nsessmax > 1;
+  bool ifneknekc = ifneknek; // Right now assume all are coupled. Passed in from command line?
+  int idsess = appnum;
+  int npsess[2] = {0,0}; //Expand this if more sessions are supported. Could be arbitrarily large
+  
+  if(nsessions > nsessmax){
+    std::cout<<"ERROR: More than two sessions are not currently supported" <<std::endl;
+    exit(1);
+  }
+
+  int np_local, np_global, nid_local, nid_global;
+  MPI_Comm_size(local_comm, &np_local);
+  MPI_Comm_rank(local_comm, &nid_local);
+  MPI_Comm_size(global_comm, &np_global);
+  MPI_Comm_rank(global_comm, &nid_global);
+ 
+  npsess[idsess] = np_local;
+  MPI_Allreduce(MPI_IN_PLACE, npsess, nsessmax, MPI_INT, MPI_MAX, global_comm);
+  
+
+}
+
 void runStep(double time, double dt, int tstep)
 {
   runStep(ins, time, dt, tstep);
