@@ -3,7 +3,6 @@
 
 #include <string>
 #include <mpi.h>
-#include "libParanumal.hpp"
 
 namespace nekrs
 {
@@ -17,7 +16,7 @@ void udfExecuteStep(double time, int tstep, int isOutputStep);
 void nekOutfld(void);
 void nekUserchk(void);
 void printRuntimeStatistics(void);
-void setupComm(MPI_Comm comm, libParanumal::setupAide &options);
+void setupComm(MPI_Comm comm, MPI_Comm *global_comm, MPI_Comm *local_comm);
 
 const double dt(void);
 const int outputStep(void);
