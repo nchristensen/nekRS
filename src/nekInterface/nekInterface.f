@@ -111,15 +111,15 @@ c-----------------------------------------------------------------------
       return
       end
 c-----------------------------------------------------------------------
-      subroutine nekf_setup(comm_in,path_in, session_in, ifflow_in,
-     $                      npscal_in, p32, meshp_in) 
+      subroutine nekf_setup(gcomm_in, lcomm_in, path_in, session_in, 
+     $                       ifflow_in, npscal_in, p32, meshp_in) 
 
       include 'SIZE'
       include 'TOTAL'
       include 'DOMAIN'
       include 'NEKINTF'
 
-      integer comm_in, iftmsh_in, ifflow_in, meshp_in, p32
+      integer gcomm_in, lcomm_in, iftmsh_in, ifflow_in, meshp_in, p32
       character session_in*(*),path_in*(*)
 
       common /rdump/ ntdump
@@ -149,7 +149,7 @@ c-----------------------------------------------------------------------
       llelt = lelt
       meshPartitioner = meshp_in
 
-      call setupcomm(comm_in,newcomm,newcommg,path_in,session_in)
+      call setupcomm(gcomm_in,newcomm,newcommg,path_in,session_in)
       call iniproc()
 
       etimes = dnekclock()

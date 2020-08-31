@@ -36,7 +36,7 @@ static void (* nek_outpost_ptr)(double* v1, double* v2, double* v3, double* vp,
                                 double* vt, char* name, int);
 static void (* nek_uf_ptr)(double*, double*, double*);
 static int (* nek_lglel_ptr)(int*);
-static void (* nek_setup_ptr)(int*, char*, char*, int*, int*, int*, int*, int, int);
+static void (* nek_setup_ptr)(int*, int*, char*, char*, int*, int*, int*, int*, int, int);
 static void (* nek_ifoutfld_ptr)(int*);
 static void (* nek_setics_ptr)(void);
 static int (* nek_bcmap_ptr)(int*, int*);
@@ -248,7 +248,7 @@ void set_function_handles(const char* session_in,int verbose)
   nek_scptr_ptr = (void (*)(int*, void*))dlsym(handle, fname("nekf_scptr"));
   check_error(dlerror());
   nek_setup_ptr =
-    (void (*)(int*, char*, char*, int*, int*, int*, int*, int, int))dlsym(handle, fname("nekf_setup"));
+    (void (*)(int*, int*, char*, char*, int*, int*, int*, int*, int, int))dlsym(handle, fname("nekf_setup"));
   check_error(dlerror());
   nek_uic_ptr = (void (*)(int*))dlsym(handle, fname("nekf_uic"));
   check_error(dlerror());
@@ -496,12 +496,15 @@ void nek_gen_bcmap()
   (*nek_gen_bcmap_ptr)();
 }
 
-int nek_setup(MPI_Comm c, setupAide &options_in, ins_t** ins_in)
+int nek_setup(MPI_Comm gc, MPI_Comm lc, setupAide &options_in, ins_t** ins_in)
 {
+  //MPI_Comm c = gc; //Use old name for now
   options = &options_in;
   ins = ins_in;
-  MPI_Comm_rank(c,&rank);
-  MPI_Fint nek_comm = MPI_Comm_c2f(c);
+  MPI_Comm_rank(gc,&rank); //¿Needs this the local rank or the global rank?
+  MPI_Fint nek_gcomm = MPI_Comm_c2f(gc);
+  MPI_Fint nek_lcomm = MPI_Comm_c2f(lc); 
+
 
   string casename;
   options->getArgs("CASENAME", casename);
@@ -531,9 +534,9 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t** ins_in)
     nBcRead = flow + nscal;
   }
 
-  (*nek_setup_ptr)(&nek_comm, (char*)cwd.c_str(), (char*)casename.c_str(),
-                   &flow, &nscal, &nBcRead, &meshPartType, 
-                   cwd.length(), casename.length()); 
+  (*nek_setup_ptr)(&nek_gcomm, &nek_lcomm, (char*)cwd.c_str(), 
+                   (char*)casename.c_str(), &flow, &nscal, &nBcRead, 
+                   &meshPartType, cwd.length(), casename.length()); 
 
   nekData.param = (double*) nek_ptr("param");
   nekData.ifield = (int*) nek_ptr("ifield");
@@ -580,6 +583,8 @@ int nek_setup(MPI_Comm c, setupAide &options_in, ins_t** ins_in)
   nekData.eface1 = (int*) nek_ptr("eface1");
   nekData.eface = (int*) nek_ptr("eface");
   nekData.icface = (int*) nek_ptr("icface");
+  // If the communicators are created on the C++ side is this 
+  // still needed?
   nekData.comm = MPI_Comm_f2c(*(int*) nek_ptr("nekcomm"));
 
   int cht = 0;

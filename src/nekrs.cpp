@@ -96,14 +96,16 @@ void setup(MPI_Comm comm_in, int buildOnly, int sizeTarget,
   std::cout<<"HERE"<<std::endl;
   setupComm(comm, &global_comm, &local_comm);
   
-
   // init nek
-  nek_setup(comm, options, &ins);
+  nek_setup(global_comm, local_comm, options, &ins);
   nek_setic();
   nek_userchk();
 
   // init solver
+  // Should the 'comm' here be local_comm or global_comm
   ins = insSetup(comm, device, options, buildOnly);
+  //ins->global_comm = &global_comm;
+  //ins->local_comm = &local_comm; 
 
   // set initial condition
   int readRestartFile;
