@@ -260,6 +260,72 @@ c      call findSYMOrient
       return
       end
 c-----------------------------------------------------------------------
+      subroutine my_setupcomm(gcomm, lcomm, path_in, session_in)
+      include 'mpif.h'
+      include 'SIZE'
+      include 'PARALLEL'
+      include 'TSTEP'
+      include 'INPUT'
+
+      integer gcomm, lcomm
+      character session_in*(*), path_in*(*)
+      logical flag
+
+      common /nekmpi/ mid,mp,nekcomm,nekgroup,nekreal
+
+      integer nid_global_root(0:nsessmax-1)
+      character*132 session_mult(0:nsessmax-1), path_mult(0:nsessmax-1)
+
+      logical ifhigh
+      logical mpi_is_initialized
+
+      integer*8 ntags
+
+      ! Initialize MPI if it is not already initialized
+      call mpi_initialized(mpi_is_initialized, ierr)
+      if (.not.mpi_is_initialized) call mpi_init(ierr)
+
+      call mpi_comm_size(gcomm, np_global, ierr)
+      call mpi_comm_rank(gcomm, nid_global, ierr)
+      
+      ! check upper tag size limit
+      call mpi_comm_get_attr(MPI_COMM_WORLD,MPI_TAG_UB,ntags,flag,ierr)
+      if (ntags .lt. np_global) then
+        if(nid_global.eq.0) write(6,*) 'ABORT: MPI_TAG_UB too small!'
+        call exitt
+      endif
+
+      ! set defaults
+      nid = nid_global
+      ! Should these be passed instead?
+      ifneknek = .false.
+      ifneknekc = .false. ! sessions are uncoupled
+      nsessions = 1
+
+      ierr = 0
+      nlin = 0
+      ! Only process zero needs to do this
+      if (nid .eq. 0) then
+        l = ltrunc(session_in,len(session_in))
+      endif      
+
+      ! Question: Where is newcomm saved in Nek5000?
+      ! Answer: 
+      ! intracomm = newcomm (localcomm)
+      ! nekcomm = newcomm
+      ! iglobalcomm = newcommg
+      ! These are defined in one of SIZE, TOTAL, DOMAIN, OPCTR, or
+      ! CTIMER
+      ! Just assign these at the end of my_setupcomm instead of the
+      ! calling function?
+
+      
+
+      
+
+      end
+
+c-----------------------------------------------------------------------
       subroutine nekf_resetio()
 
       include 'SIZE'
