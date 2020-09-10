@@ -305,9 +305,16 @@ c-----------------------------------------------------------------------
       ierr = 0
       nlin = 0
       ! Only process zero needs to do this
-      if (nid .eq. 0) then
-        l = ltrunc(session_in,len(session_in))
-      endif      
+      ! Has NekRS SESSION.NAME files?
+
+      ! On the Nek5000 side nsessions, ifneknekc
+      ! session_mult, path_mult, and npsess is read
+      ! from the SESSION.NAME file     
+
+      !if (nid .eq. 0) then
+      !  l = ltrunc(session_in,len(session_in))
+      !  
+      !endif      
 
       ! Question: Where is newcomm saved in Nek5000?
       ! Answer: 
