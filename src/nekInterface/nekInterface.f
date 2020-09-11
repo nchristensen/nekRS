@@ -298,12 +298,35 @@ c-----------------------------------------------------------------------
       ! set defaults
       nid = nid_global
       ! Should these be passed instead?
+      ! Add a coupled flag to the command line?
       ifneknek = .false.
       ifneknekc = .false. ! sessions are uncoupled
       nsessions = 1
 
-      ierr = 0
-      nlin = 0
+      ! Seems like NekRS uses not SESSION.NAME
+      ! Pass in properties then?
+      ! Specifically, need to set nsessions,
+      ! npsess, session_mult(n), path_mult(n)
+      
+      call bcast(nsessions,ISIZE)
+      if (nsessions .gt. nsessmax)
+     &   call exitti('nsessmax in SIZE too low!$!',nsessmax)
+      if (nsessions .gt. 1) ifneknek = .true.
+
+      call bcast(ifneknekc, LSIZE)
+      do n = 0,nsessions-1
+        ! Broadcast npsess(n), session_mult(n), path_mult(n)
+      enddo
+      
+      if (.not.ifneknek) then
+        !session = session_mult(0)
+        !path    = path_mult(0)
+        !amgfile = session
+        return
+      endif
+
+      !ierr = 0
+      !nlin = 0
       ! Only process zero needs to do this
       ! Has NekRS SESSION.NAME files?
 
