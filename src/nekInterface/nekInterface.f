@@ -299,33 +299,58 @@ c-----------------------------------------------------------------------
       nid = nid_global
       ! Should these be passed instead?
       ! Add a coupled flag to the command line?
+      ! is nsessions = 1 identical to ifneknek=false?
       ifneknek = .false.
       ifneknekc = .false. ! sessions are uncoupled
       nsessions = 1
 
       ! Seems like NekRS uses not SESSION.NAME
       ! Pass in properties then?
-      ! Specifically, need to set nsessions,
-      ! npsess, session_mult(n), path_mult(n)
-      
+      ! Specifically, need to set 
+      ! nsessions, npsess, session_mult(n), path_mult(n) 
+
+      ! ifneknek can come from number of sessions
+      ! ifneknekc can come from flag on command line
+      ! session_mult(n) can be derived from path?
+      ! path_mult(n) can be determined from command line
+      ! npsess can be determined from mpi communicator  
+        
+      ! Temporarily hardcoded settings
+      ! 
+
       call bcast(nsessions,ISIZE)
       if (nsessions .gt. nsessmax)
      &   call exitti('nsessmax in SIZE too low!$!',nsessmax)
       if (nsessions .gt. 1) ifneknek = .true.
 
+
+      ! Broadcast ifneknekc npsess(n), session_mult(n), path_mult(n)
       call bcast(ifneknekc, LSIZE)
       do n = 0,nsessions-1
-        ! Broadcast npsess(n), session_mult(n), path_mult(n)
+        call bcast(npsess(n), ISIZE)
+        call bcast(session_mult(n), 132*CSIZE)
+        call bcast(path_mult(n), 132*CSIZE)
       enddo
-      
+
+      ! Single session run      
       if (.not.ifneknek) then
-        !session = session_mult(0)
-        !path    = path_mult(0)
-        !amgfile = session
+        ifneknekc = .false. ! Shouldn't this be set already
+        session = session_mult(0)
+        path = path_mult(0)
+        amgfile = session
         return
       endif
 
-      !ierr = 0
+c     Check if the specified number of ranks in each session is 
+c     consistent with the total number of ranks
+      npall=0
+      do n=0,nsessions-1
+        npall=npall+npsess(n)
+      enddo
+      if (npall.ne.np_global)
+     & call exitti('Number of ranks does not match!$',npall)
+
+      !err = 0
       !nlin = 0
       ! Only process zero needs to do this
       ! Has NekRS SESSION.NAME files?
