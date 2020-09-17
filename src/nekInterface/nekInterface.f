@@ -312,11 +312,10 @@ c-----------------------------------------------------------------------
       ! ifneknek can come from number of sessions
       ! ifneknekc can come from flag on command line
       ! session_mult(n) can be derived from path?
-      ! path_mult(n) can be determined from command line
+      ! path_mult(n) can be determined from path?
       ! npsess can be determined from mpi communicator  
         
-      ! Temporarily hardcoded settings
-      ! 
+      ! Let us assume that the above is the case and continue
 
       call bcast(nsessions,ISIZE)
       if (nsessions .gt. nsessmax)
@@ -334,7 +333,7 @@ c-----------------------------------------------------------------------
 
       ! Single session run      
       if (.not.ifneknek) then
-        ifneknekc = .false. ! Shouldn't this be set already
+        ifneknekc = .false. ! Should this not be set already
         session = session_mult(0)
         path = path_mult(0)
         amgfile = session
@@ -349,6 +348,21 @@ c     consistent with the total number of ranks
       enddo
       if (npall.ne.np_global)
      & call exitti('Number of ranks does not match!$',npall)
+
+c     Assign key for splitting into multiple groups
+c     This shouldn't be necessary. It is done on the C++ side.
+c     How to assign session and path though...
+c     Use the last value in session_mult/path_mult?      
+      
+      !session = session_mult(idsess)
+      !path = path_mult(idsess)
+
+      if (ifneknekc .and. nessions.gt.2) then
+        call exitti('More than two coupled sessions not supported!'
+     $  nsessions)
+      endif
+      
+      amgfile = session
 
       !err = 0
       !nlin = 0
@@ -375,9 +389,8 @@ c     consistent with the total number of ranks
       ! calling function?
 
       
-
       
-
+      return
       end
 
 c-----------------------------------------------------------------------
